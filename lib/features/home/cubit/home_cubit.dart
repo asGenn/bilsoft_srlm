@@ -9,6 +9,12 @@ part 'home_state.dart';
 
 enum SearchType { ad, grup }
 
+enum StokFilter {
+  tumStoklar,
+  stoktaOlanlar,
+  riskteOlanlar,
+}
+
 class HomeCubit extends Cubit<HomeState> {
   final _sharedPrefs = getIt<SharedPreferencesService>();
 
@@ -45,6 +51,29 @@ class HomeCubit extends Cubit<HomeState> {
             return stok.ad.toLowerCase().contains(value.toLowerCase());
           case SearchType.grup:
             return stok.grup.toLowerCase().contains(value.toLowerCase());
+        }
+      }).toList();
+
+      emit(HomeLoaded(
+        stokList: currentState.stokList,
+        filteredList: filteredList,
+      ));
+    }
+  }
+
+  void filterStoklar(StokFilter filter) {
+    if (state is HomeLoaded) {
+      final currentState = state as HomeLoaded;
+      final filteredList = currentState.stokList.where((stok) {
+        final int kalan = stok.giris - stok.cikis;
+
+        switch (filter) {
+          case StokFilter.tumStoklar:
+            return true;
+          case StokFilter.stoktaOlanlar:
+            return kalan > 0;
+          case StokFilter.riskteOlanlar:
+            return kalan <= (stok.riskLimit ?? 0);
         }
       }).toList();
 
