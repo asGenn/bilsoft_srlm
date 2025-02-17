@@ -1,3 +1,4 @@
+import 'package:bilsoft_srlm/core/service/notification_service.dart';
 import 'package:bilsoft_srlm/domain/entities/stok.dart';
 import 'package:bilsoft_srlm/features/detail/view/detail_screen.dart';
 import 'package:bilsoft_srlm/features/home/cubit/home_cubit.dart';
@@ -36,6 +37,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   HomeLoaded() => Column(
                       children: [
                         _buildSearchBar(context),
+                        ElevatedButton(
+                            onPressed: () {
+                              
+                              NotificationService().showNotification(
+                                title: 'Bilsoft SRLM',
+                                body: 'Stoklar listelendi',
+                              );
+                            },
+                            child: Text('Show Notification')),
                         Expanded(child: _buildStockList(state)),
                       ],
                     ),
