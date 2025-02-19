@@ -1,7 +1,6 @@
-import 'package:bilsoft_srlm/core/service/notification_service.dart';
-import 'package:bilsoft_srlm/domain/entities/stok.dart';
 import 'package:bilsoft_srlm/features/detail/view/detail_screen.dart';
 import 'package:bilsoft_srlm/features/home/cubit/home_cubit.dart';
+import 'package:bilsoft_srlm/features/home/widgets/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -17,286 +16,373 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  SearchType _searchType = SearchType.ad;
-  StokFilter _stokFilter = StokFilter.tumStoklar;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => HomeCubit()..getStokList(),
-      child: Builder(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: BlocBuilder<HomeCubit, HomeState>(
-              builder: (context, state) {
-                return switch (state) {
-                  HomeLoading() => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  HomeLoaded() => Column(
-                      children: [
-                        _buildSearchBar(context),
-                        ElevatedButton(
-                            onPressed: () {
-                              
-                              NotificationService().showNotification(
-                                title: 'Bilsoft SRLM',
-                                body: 'Stoklar listelendi',
-                              );
-                            },
-                            child: Text('Show Notification')),
-                        Expanded(child: _buildStockList(state)),
-                      ],
-                    ),
-                  HomeError() => Center(
-                      child: Text(state.message),
-                    ),
-                  _ => const SizedBox.shrink(),
-                };
-              },
-            ),
-          ),
-        ),
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: BlocBuilder<HomeCubit, HomeState>(
+        builder: (context, state) {
+          return switch (state) {
+            HomeLoading() => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            HomeLoaded() => ResponsiveLayout(
+                mobile: _buildMobileLayout(context, state),
+                tablet: _buildTabletLayout(context, state),
+              ),
+            HomeError() => Center(
+                child: Text(state.message),
+              ),
+            _ => const SizedBox.shrink(),
+          };
+        },
       ),
     );
   }
 
-  Widget _buildSearchBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+  Widget _buildMobileLayout(BuildContext context, HomeLoaded state) {
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        _buildSliverAppBar(context, state),
+        SliverToBoxAdapter(
+          child: Column(
+            children: [
+              _buildSearchBar(context, state),
+              _buildQuickStats(state),
+              _buildMonitoringBar(state),
+            ],
+          ),
+        ),
+        _buildStockGrid(state),
+      ],
+    );
+  }
+
+  Widget _buildTabletLayout(BuildContext context, HomeLoaded state) {
+    return Row(
+      children: [
+        Container(
+          width: 320,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(5, 0),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 48),
+              _buildSearchBar(context, state),
+              const SizedBox(height: 24),
+              _buildQuickStats(state),
+              const SizedBox(height: 24),
+              _buildMonitoringBar(state),
+            ],
+          ),
+        ),
+        Expanded(
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              _buildSliverAppBar(context, state),
+              _buildStockGrid(state),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSliverAppBar(BuildContext context, HomeLoaded state) {
+    return SliverAppBar(
+      expandedHeight: 120,
+      floating: true,
+      pinned: true,
+      elevation: 0,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          'Stok Takip',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: false,
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: () => context.read<HomeCubit>().getStokList(),
+        ),
+        const SizedBox(width: 16),
+      ],
+    );
+  }
+
+  Widget _buildQuickStats(HomeLoaded state) {
+    final totalStocks = state.stokList.length;
+    final riskliStoklar = state.stokList.where((stok) {
+      final kalan = stok.giris - stok.cikis;
+      return kalan <= (stok.riskLimit ?? 0);
+    }).length;
+    final guvenliStoklar = totalStocks - riskliStoklar;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Hızlı Bakış',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Stok Ara...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    context.read<HomeCubit>().searchStok(value, _searchType);
-                  },
+                child: StatCard(
+                  title: 'Toplam',
+                  value: totalStocks.toString(),
+                  color: Colors.blue,
+                  icon: Icons.inventory,
                 ),
               ),
               const SizedBox(width: 8),
-              _buildSearchTypeDropdown(),
+              Expanded(
+                child: StatCard(
+                  title: 'Güvenli',
+                  value: guvenliStoklar.toString(),
+                  color: Colors.green,
+                  icon: Icons.check_circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: StatCard(
+                  title: 'Riskli',
+                  value: riskliStoklar.toString(),
+                  color: Colors.red,
+                  icon: Icons.warning,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          _buildFilterDropdown(context),
         ],
       ),
     );
   }
 
-  Widget _buildSearchTypeDropdown() {
-    return DropdownButton<SearchType>(
-      value: _searchType,
-      items: const [
-        DropdownMenuItem(
-          value: SearchType.ad,
-          child: Text('Ad'),
-        ),
-        DropdownMenuItem(
-          value: SearchType.grup,
-          child: Text('Grup'),
-        ),
-      ],
-      onChanged: (value) {
-        if (value != null) {
-          setState(() {
-            _searchType = value;
-          });
-        }
-      },
-    );
-  }
-
-  Widget _buildFilterDropdown(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButton<StokFilter>(
-        value: _stokFilter,
-        isExpanded: true,
-        underline: const SizedBox(),
-        items: const [
-          DropdownMenuItem(
-            value: StokFilter.tumStoklar,
-            child: Text('Tüm Stoklar'),
+  Widget _buildSearchBar(BuildContext context, HomeLoaded state) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SearchField(
+            onChanged: (value) {
+              context.read<HomeCubit>().searchStok(value, state.searchType);
+            },
           ),
-          DropdownMenuItem(
-            value: StokFilter.stoktaOlanlar,
-            child: Text('Stokta Olanlar'),
-          ),
-          DropdownMenuItem(
-            value: StokFilter.riskteOlanlar,
-            child: Text('Stoğu Riskte Olanlar'),
-          ),
-        ],
-        onChanged: (value) {
-          if (value != null) {
-            setState(() {
-              _stokFilter = value;
-            });
-            context.read<HomeCubit>().filterStoklar(_stokFilter);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildStockList(HomeLoaded state) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: state.filteredList.length,
-      itemBuilder: (context, index) {
-        final item = state.filteredList[index];
-        return _buildStockCard(context, item);
-      },
-    );
-  }
-
-  Widget _buildStockCard(BuildContext context, StokEntity item) {
-    final int kalan = item.giris - item.cikis;
-
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () async {
-          await Navigator.of(context).push(DetailScreen.route(item));
-          context.read<HomeCubit>().getStokList();
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 12),
+          Row(
             children: [
-              _buildStockHeader(item),
-              const SizedBox(height: 12),
-              _buildStockInfo(item, kalan),
-              const SizedBox(height: 8),
-              _buildBarcodeInfo(item),
+              Expanded(
+                child: CustomFilterChip(
+                  label: 'Arama Tipi',
+                  value: state.searchType == SearchType.ad ? 'Ad' : 'Grup',
+                  onTap: () => _showSearchTypeDialog(context, state),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: CustomFilterChip(
+                  label: 'Filtre',
+                  value: _getFilterLabel(state.stokFilter),
+                  onTap: () => _showFilterDialog(context, state),
+                ),
+              ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildStockHeader(StokEntity item) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            item.ad,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 4,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade100,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            item.grup,
-            style: TextStyle(
-              color: Colors.blue.shade900,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
+  String _getFilterLabel(StokFilter filter) {
+    return switch (filter) {
+      StokFilter.tumStoklar => 'Tümü',
+      StokFilter.stoktaOlanlar => 'Stokta',
+      StokFilter.riskteOlanlar => 'Riskli',
+    };
   }
 
-  Widget _buildStockInfo(StokEntity item, int kalan) {
-    return Row(
-      children: [
-        _buildStockInfoTile('Giriş', item.giris.toString(), Colors.green),
-        const SizedBox(width: 12),
-        _buildStockInfoTile('Çıkış', item.cikis.toString(), Colors.red),
-        const SizedBox(width: 12),
-        _buildStockInfoTile('Kalan', kalan.toString(), Colors.blue),
-        const SizedBox(width: 12),
-        _buildStockInfoTile(
-          'Risk Limit',
-          '${item.riskLimit ?? 0}',
-          kalan <= (item.riskLimit ?? 0) ? Colors.red : Colors.green,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStockInfoTile(String label, String value, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: color.withOpacity(0.8),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+  void _showSearchTypeDialog(BuildContext context, HomeLoaded state) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => BottomSheetContent(
+        title: 'Arama Tipi',
+        items: [
+          BottomSheetItem(
+            title: 'Ad ile Ara',
+            isSelected: state.searchType == SearchType.ad,
+            onTap: () {
+              context.read<HomeCubit>().updateSearchType(SearchType.ad);
+              Navigator.pop(context);
+            },
+          ),
+          BottomSheetItem(
+            title: 'Grup ile Ara',
+            isSelected: state.searchType == SearchType.grup,
+            onTap: () {
+              context.read<HomeCubit>().updateSearchType(SearchType.grup);
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildBarcodeInfo(StokEntity item) {
-    return Row(
-      children: [
-        Icon(
-          Icons.qr_code,
-          size: 16,
-          color: Colors.grey.shade600,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          item.barkod,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 13,
+  void _showFilterDialog(BuildContext context, HomeLoaded state) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => BottomSheetContent(
+        title: 'Filtrele',
+        items: [
+          BottomSheetItem(
+            title: 'Tüm Stoklar',
+            isSelected: state.stokFilter == StokFilter.tumStoklar,
+            onTap: () {
+              context.read<HomeCubit>().updateStokFilter(StokFilter.tumStoklar);
+              Navigator.pop(context);
+            },
           ),
+          BottomSheetItem(
+            title: 'Stokta Olanlar',
+            isSelected: state.stokFilter == StokFilter.stoktaOlanlar,
+            onTap: () {
+              context
+                  .read<HomeCubit>()
+                  .updateStokFilter(StokFilter.stoktaOlanlar);
+              Navigator.pop(context);
+            },
+          ),
+          BottomSheetItem(
+            title: 'Stoğu Riskte Olanlar',
+            isSelected: state.stokFilter == StokFilter.riskteOlanlar,
+            onTap: () {
+              context
+                  .read<HomeCubit>()
+                  .updateStokFilter(StokFilter.riskteOlanlar);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMonitoringBar(HomeLoaded state) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Stok Takibi',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: MonitoringButton(
+                  isMonitoring: state.isMonitoring,
+                  onPressed: () => context.read<HomeCubit>().startMonitoring(),
+                  label: "Başlat",
+                  isEnabled: !state.isMonitoring,
+                  icon: Icons.play_arrow,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: MonitoringButton(
+                  isMonitoring: state.isMonitoring,
+                  onPressed: () => context.read<HomeCubit>().stopMonitoring(),
+                  label: "Durdur",
+                  isEnabled: state.isMonitoring,
+                  icon: Icons.stop,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStockGrid(HomeLoaded state) {
+    return SliverPadding(
+      padding: const EdgeInsets.all(16),
+      sliver: SliverGrid(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: MediaQuery.of(context).size.width > 1200
+              ? 3
+              : MediaQuery.of(context).size.width > 768
+                  ? 2
+                  : 1,
+          childAspectRatio: MediaQuery.of(context).size.width > 768 ? 2.5 : 2.2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
-      ],
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final item = state.filteredList[index];
+            return StockCard(
+              item: item,
+              isMonitoring: state.isMonitoring,
+              onTap: () => Navigator.of(context).push(DetailScreen.route(item)),
+            );
+          },
+          childCount: state.filteredList.length,
+        ),
+      ),
     );
   }
 }

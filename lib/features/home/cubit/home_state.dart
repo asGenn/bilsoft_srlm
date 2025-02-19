@@ -1,30 +1,37 @@
 part of 'home_cubit.dart';
 
-sealed class HomeState extends Equatable {
+abstract class HomeState extends Equatable {
   const HomeState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
-final class HomeInitial extends HomeState {}
+class HomeInitial extends HomeState {}
 
-final class HomeLoading extends HomeState {}
+class HomeLoading extends HomeState {}
 
-final class HomeLoaded extends HomeState {
+class HomeLoaded extends HomeState {
   final List<StokEntity> stokList;
   final List<StokEntity> filteredList;
+  final bool isMonitoring;
+  final SearchType searchType;
+  final StokFilter stokFilter;
 
   const HomeLoaded({
     required this.stokList,
-    this.filteredList = const [],
+    required this.filteredList,
+    this.isMonitoring = false,
+    this.searchType = SearchType.ad,
+    this.stokFilter = StokFilter.tumStoklar,
   });
 
   @override
-  List<Object> get props => [stokList, filteredList];
+  List<Object?> get props =>
+      [stokList, filteredList, isMonitoring, searchType, stokFilter];
 }
 
-final class HomeError extends HomeState {
+class HomeError extends HomeState {
   final String message;
 
   const HomeError({required this.message});

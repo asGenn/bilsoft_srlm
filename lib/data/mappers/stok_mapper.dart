@@ -42,4 +42,6 @@ extension DatumMapper on Datum {
         teklifsiparisIsl: teklifsiparisIsl,
         tmpFatIsl: tmpFatIsl);
   }
+  
+  
 }
