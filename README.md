@@ -8,12 +8,13 @@ Bilsoft Stok Risk Limit Modülü (SRLM), işletmenizin stok yönetimini akıllı
 
 ### 🎥 Uygulama Önizlemesi
 
-<img src="assets/screenshots/stok_takip.gif" alt="Stok Takip Animasyonu" width="350"/>
+![Stok Takip Animasyonu](assets/screenshots/stok_takip.gif)
 
 _Stok takip sisteminin canlı kullanımı_
 
 ### Ana Ekran
 
+<div align="center">
 <img src="assets/screenshots/Screenshot_1740073024.png" alt="Ana Ekran - Stok Takibi" width="300"/>
 
 _Stok takibi ana ekranı - Hızlı bakış, arama ve filtreleme özellikleri_
@@ -22,11 +23,16 @@ _Stok takibi ana ekranı - Hızlı bakış, arama ve filtreleme özellikleri_
 
 _Stok izleme durumu ve risk takibi_
 
+</div>
+
 ### Detay Ekranı
 
+<div align="center">
 <img src="assets/screenshots/Screenshot_1740073822.png" alt="Detay Ekranı" width="300"/>
 
 _Ürün detayları ve risk limiti yönetimi_
+
+</div>
 
 ## 🚀 Temel Özellikler
 
