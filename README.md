@@ -101,6 +101,98 @@ _Ürün detayları ve risk limiti yönetimi_
    - KDV oranı
    - KDV dahil/hariç durumu
 
+## 🏗️ Teknik Mimari
+
+### Clean Architecture
+
+Uygulama, Clean Architecture prensiplerine uygun olarak geliştirilmiştir. Bu yaklaşım, kodun daha sürdürülebilir, test edilebilir ve ölçeklenebilir olmasını sağlar.
+
+#### Katmanlar
+
+1. **📱 Presentation Layer (UI)**
+
+   - `features/`: Ekranlar ve widget'lar
+   - `cubit/`: Durum yönetimi
+   - Material 3 tasarım sistemi
+
+2. **💼 Domain Layer**
+
+   - `entities/`: İş mantığı modelleri
+   - `repositories/`: Soyut repository tanımları
+
+3. **💾 Data Layer**
+   - `repositories/`: Repository implementasyonları
+   - `datasources/`: Veri kaynakları
+
+### 🛠️ Kullanılan Teknolojiler
+
+- **State Management**
+
+  - `bloc`: ^9.0.0
+  - `flutter_bloc`: ^9.0.0
+  - `equatable`: ^2.0.7
+
+- **Veri Güvenliği ve Depolama**
+
+  - `flutter_secure_storage`: ^9.2.4
+  - `shared_preferences`: ^2.5.2
+
+- **Network ve API**
+
+  - `dio`: ^5.8.0+1
+  - `jwt_decoder`: ^2.0.1
+
+- **Dependency Injection**
+
+  - `get_it`: ^8.0.3
+
+- **Background İşlemler**
+  - `workmanager`: ^0.5.2
+  - `flutter_local_notifications`: ^18.0.1
+
+### 📦 Proje Yapısı
+
+```
+lib/
+├── core/
+│   ├── constants/
+│   ├── di/
+│   └── utils/
+├── data/
+│   ├── datasources/
+│   └── repositories/
+├── domain/
+│   ├── entities/
+│   └── repositories/
+└── features/
+    ├── home/
+    │   ├── cubit/
+    │   ├── view/
+    │   └── widgets/
+    ├── detail/
+    └── splash/
+```
+
+### 🔄 Veri Akışı
+
+1. UI'dan gelen kullanıcı etkileşimi
+2. Cubit tarafından yakalanan event
+3. Repository üzerinden veri işlemleri
+4. UI'ın güncellenmesi
+
+### 🔐 Güvenlik Özellikleri
+
+- JWT tabanlı kimlik doğrulama
+- Güvenli veri depolama
+- Şifrelenmiş yerel depolama
+
+### 📱 Uygulama Özellikleri
+
+- Arka plan görev yönetimi
+- Yerel bildirimler
+- Çevrimdışı veri depolama
+- Gerçek zamanlı veri senkronizasyonu
+
 ## 🔄 Sürüm Geçmişi
 
 ### Versiyon 1.0.0
