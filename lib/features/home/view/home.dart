@@ -1,3 +1,4 @@
+import 'package:bilsoft_srlm/core/service/notification_service.dart';
 import 'package:bilsoft_srlm/features/detail/view/detail_screen.dart';
 import 'package:bilsoft_srlm/features/home/cubit/home_cubit.dart';
 import 'package:bilsoft_srlm/features/home/widgets/index.dart';
@@ -334,7 +335,13 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: MonitoringButton(
                   isMonitoring: state.isMonitoring,
-                  onPressed: () => context.read<HomeCubit>().startMonitoring(),
+                  onPressed: () {
+                    NotificationService().showNotification(
+                      title: 'Stok Takibi Başlatıldı',
+                      body: 'Stok takibi başlatıldı',
+                    );
+                    context.read<HomeCubit>().startMonitoring();
+                  },
                   label: "Başlat",
                   isEnabled: !state.isMonitoring,
                   icon: Icons.play_arrow,
