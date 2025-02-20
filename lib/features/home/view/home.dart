@@ -377,7 +377,12 @@ class _HomeScreenState extends State<HomeScreen> {
             return StockCard(
               item: item,
               isMonitoring: state.isMonitoring,
-              onTap: () => Navigator.of(context).push(DetailScreen.route(item)),
+              onTap: () async {
+                await Navigator.of(context).push(DetailScreen.route(item));
+                if (context.mounted) {
+                  context.read<HomeCubit>().getStokList();
+                }
+              },
             );
           },
           childCount: state.filteredList.length,
